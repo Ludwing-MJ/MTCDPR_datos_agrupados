@@ -36,30 +36,32 @@ calcular_parametros_agrupamiento <- function(datos) {
   ))
 }
 ###############################################################################
-# Función para construir tabla de frecuencias
-###############################################################################
-
+# Función corregida para construir tabla de frecuencias
 construir_tabla_frecuencias <- function(datos, parametros) {
-  # Crear límites de clase
-  limite_inferior <- seq(parametros$x_min, 
-                         parametros$x_max - parametros$amplitud, 
-                         by = parametros$amplitud)
-  limite_superior <- seq(parametros$x_min + parametros$amplitud, 
-                         parametros$x_max, 
-                         by = parametros$amplitud)
   
-  # Ajustar último límite superior
-  limite_superior[length(limite_superior)] <- parametros$x_max
+  # Crear breaks (puntos de corte) para las clases
+  # Esto garantiza exactamente k clases
+  breaks <- seq(parametros$x_min, parametros$x_max, length.out = parametros$k + 1)
+  
+  # Crear límites de clase a partir de los breaks
+  limite_inferior <- breaks[-length(breaks)]  # Todos excepto el último
+  limite_superior <- breaks[-1]               # Todos excepto el primero
   
   # Calcular marcas de clase
   marca_clase <- (limite_inferior + limite_superior) / 2
   
   # Calcular frecuencias absolutas usando cut()
   intervalos <- cut(datos, 
-                    breaks = c(limite_inferior, parametros$x_max),
+                    breaks = breaks,
                     include.lowest = TRUE,
-                    right = FALSE)
-  frecuencia_absoluta <- as.numeric(table(intervalos))
+                    right = FALSE,
+                    labels = FALSE)  # Usar números en lugar de etiquetas
+  
+  # Contar frecuencias por clase
+  frecuencia_absoluta <- as.numeric(table(factor(intervalos, levels = 1:parametros$k)))
+  
+  # Reemplazar NA por 0 si alguna clase queda vacía
+  frecuencia_absoluta[is.na(frecuencia_absoluta)] <- 0
   
   # Calcular frecuencias derivadas
   frecuencia_relativa <- frecuencia_absoluta / parametros$n
@@ -70,8 +72,8 @@ construir_tabla_frecuencias <- function(datos, parametros) {
   # Crear tabla
   tabla <- data.frame(
     Clase = 1:parametros$k,
-    Limite_Inferior = limite_inferior,
-    Limite_Superior = limite_superior,
+    Limite_Inferior = round(limite_inferior, 3),
+    Limite_Superior = round(limite_superior, 3),
     Marca_Clase = round(marca_clase, 3),
     Frecuencia_Absoluta = frecuencia_absoluta,
     Frecuencia_Relativa = round(frecuencia_relativa, 4),
@@ -83,38 +85,38 @@ construir_tabla_frecuencias <- function(datos, parametros) {
   return(tabla)
 }
 ###############################################################################
-# Función para calcular medidas de tendencia central
+# Función CORREGIDA para calcular medidas de tendencia central
 ###############################################################################
-
 calcular_tendencia_central <- function(tabla, parametros) {
   # Media aritmética
   media <- sum(tabla$fi_xi) / parametros$n
   
   # Mediana
-  posicion_mediana <- parametros$n / 2
+  n <- parametros$n
+  posicion_mediana <- n / 2
   clase_mediana <- which(tabla$Frecuencia_Acumulada >= posicion_mediana)[1]
-  fa_anterior <- ifelse(clase_mediana == 1, 0, 
-                        tabla$Frecuencia_Acumulada[clase_mediana - 1])
-  
-  mediana <- tabla$Limite_Inferior[clase_mediana] + 
-    ((posicion_mediana - fa_anterior) / 
-       tabla$Frecuencia_Absoluta[clase_mediana]) * parametros$amplitud
+  L <- tabla$Limite_Inferior[clase_mediana]
+  F_anterior <- ifelse(clase_mediana == 1, 0, tabla$Frecuencia_Acumulada[clase_mediana - 1])
+  f_m <- tabla$Frecuencia_Absoluta[clase_mediana]
+  A <- tabla$Limite_Superior[clase_mediana] - tabla$Limite_Inferior[clase_mediana]
+  mediana <- L + ((posicion_mediana - F_anterior) / f_m) * A
   
   # Moda
   clase_modal <- which.max(tabla$Frecuencia_Absoluta)
-  d1 <- tabla$Frecuencia_Absoluta[clase_modal] - 
-    ifelse(clase_modal == 1, 0, 
-           tabla$Frecuencia_Absoluta[clase_modal - 1])
-  d2 <- tabla$Frecuencia_Absoluta[clase_modal] - 
-    ifelse(clase_modal == parametros$k, 0, 
-           tabla$Frecuencia_Absoluta[clase_modal + 1])
-  
-  moda <- tabla$Limite_Inferior[clase_modal] + 
-    (d1 / (d1 + d2)) * parametros$amplitud
+  fa_ant <- ifelse(clase_modal == 1, 0, tabla$Frecuencia_Absoluta[clase_modal - 1])
+  fa_sig <- ifelse(clase_modal == parametros$k, 0, tabla$Frecuencia_Absoluta[clase_modal + 1])
+  fa_ant <- ifelse(is.na(fa_ant), 0, fa_ant)
+  fa_sig <- ifelse(is.na(fa_sig), 0, fa_sig)
+  d1 <- tabla$Frecuencia_Absoluta[clase_modal] - fa_ant
+  d2 <- tabla$Frecuencia_Absoluta[clase_modal] - fa_sig
+  if ((d1 + d2) == 0) {
+    moda <- NA
+  } else {
+    moda <- tabla$Limite_Inferior[clase_modal] + (d1 / (d1 + d2)) * A
+  }
   
   return(list(media = media, mediana = mediana, moda = moda))
 }
-
 ###############################################################################
 # Función para calcular medidas de dispersión
 ###############################################################################

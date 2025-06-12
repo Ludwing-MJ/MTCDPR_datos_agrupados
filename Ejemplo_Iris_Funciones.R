@@ -53,3 +53,4 @@ dispersion
 # Calcular Q1 y P80
 Q1 <- calcular_posicion_relativa(tabla_freq, parametros, 1, "cuartil");Q1
 P80 <- calcular_posicion_relativa(tabla_freq, parametros, 80, "percentil");P80
+
