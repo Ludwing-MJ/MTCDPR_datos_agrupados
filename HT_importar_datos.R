@@ -12,3 +12,5 @@ ejercicio1 <- read_excel("HT.xlsx", sheet = 1)
 # Importar datos ejercicio 2
 ejercicio2 <- read_excel("HT.xlsx", sheet = 2)
 
+# Importar datos ejercicio 3
+ejercicio3 <- read_excel("HT.xlsx", sheet = 3)
