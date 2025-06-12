@@ -1,0 +1,157 @@
+# UNIVERSIDAD DE SAN CARLOS DE GUATEMALA
+# FACULTAD DE AGRONOMÍA
+# CENTRO DE TELEMÁTICA -CETE-
+# ESTADÍSTICA DESCRIPTIVA Y ANALISIS EXPLORATORIO DE DATOS
+# P. Agr. Ludwing Isaí Marroquín Jiménez
+
+# Base de datos: Fisher, R. (1936). Iris [Dataset]. 
+# UCI Machine Learning Repository. https://doi.org/10.24432/C56C76
+
+# Repositorio Github Analisis:
+# https://github.com/Ludwing-MJ/Est_Desc_EJ.git
+
+# PREPARACIÓN DEL ENTORNO DE TRABAJO
+# Instalación y carga de paquetes necesarios
+## Para manipulación de datos y graficos avanzados
+if (!require(tidyverse)) install.packages("tidyverse")  
+## Para estadísticas descriptivas
+if (!require(psych)) install.packages("psych")         
+## Para visualización de correlaciones
+if (!require(corrplot)) install.packages("corrplot")    
+## Para exploración automática
+if (!require(DataExplorer)) install.packages("DataExplorer")  
+
+# Cargar el dataset IRIS
+data(iris)
+
+# ANALISIS EXPLORATORIO DE LOS DATOS
+# Visualizar las primeras filas
+head(iris)
+
+# Explorar la estructura de los datos
+str(iris)
+
+# Exploración automática con DataExplorer
+DataExplorer::plot_intro(iris)
+
+# CALCULO DE PARAMETROS DE ESTADISTICA DESCRIPTIVA
+# Media aritmética de la longitud del sépalo
+mean(iris$Sepal.Length)
+
+# Mediana de la longitud del sépalo
+median(iris$Sepal.Length)
+
+# DEFINIR UNA FUNCIÓN PARA CALCULAR LA MODA
+# Función para calcular la moda
+moda <- function(x) {
+  # Eliminar valores NA
+  x <- na.omit(x)
+  
+  # Verificar si el vector está vacío
+  if (length(x) == 0) return(NA_character_)
+  
+  # Calcular la frecuencia de cada valor
+  tabla <- table(x)
+  
+  # Identificar el/los valores con mayor frecuencia
+  max_frecuencia <- max(tabla)
+  modas <- names(tabla[tabla == max_frecuencia])
+  
+  # Verificar si todos los valores son únicos (sin moda)
+  if (max_frecuencia == 1) return(NA_character_)
+  
+  # Retornar la moda como un string separado por comas
+  return(paste(modas, collapse = ", "))
+}
+
+# Calculo de la moda de la longitud del sépalo
+moda (iris$Sepal.Length)
+
+# Varianza 
+var(iris$Sepal.Length)
+
+# Desviación estándar
+sd(iris$Sepal.Length)
+
+# Rango 
+range(iris$Sepal.Length)
+
+# Rango intercuartílico
+IQR(iris$Sepal.Length)
+
+# Media y mediana por especie usando aggregate()
+aggregate(. ~ Species,
+          data = iris,
+          FUN  = function(v) c(media = mean(v),
+                               mediana = median(v)))
+
+
+# Crear tabla resumen usando dplyr 
+tabla_resumen <- iris %>%
+  # Convertir a formato largo para facilitar los cálculos
+  pivot_longer(
+    cols = -Species,
+    names_to = "Variable",
+    values_to = "Valor"
+  ) %>%
+  group_by(Species, Variable) %>%
+  summarise(
+    Media = round(mean(Valor, na.rm = TRUE), 2),
+    Mediana = round(median(Valor, na.rm = TRUE), 2),
+    Moda = moda(Valor),
+  ) %>%
+  arrange(Species, Variable)
+
+# # Crear tabla resumen 
+tabla_resumen <- iris %>%
+  # Convertir a formato largo para facilitar los cálculos
+  pivot_longer(
+    cols = -Species,
+    names_to = "Variable",
+    values_to = "Valor"
+  ) %>%
+  group_by(Species, Variable) %>%
+  summarise(
+    Media = round(mean(Valor, na.rm = TRUE), 2),
+    Mediana = round(median(Valor, na.rm = TRUE), 2),
+    Moda = moda(Valor),
+  ) %>%
+  arrange(Species, Variable)
+
+# Visualizar la tabla resumen
+tabla_resumen
+
+# Resumen estadístico con funciones base
+summary(iris)
+
+# Resumen detallado con psych
+describe(iris[, 1:4])
+
+# VISUALIZACIÓN BÁSICA DE DATOS
+# Histogramas de variables numéricas
+plot_histogram(iris)
+
+# Diagramas de caja por especie
+plot_boxplot(iris, by = "Species")
+
+# Mapa de calor de correlaciones
+plot_correlation(iris[, 1:4])
+
+# Convertir los datos a formato largo
+iris_long <- iris %>%
+  tidyr::pivot_longer(
+    cols = starts_with("Sepal") | starts_with("Petal"),
+    names_to = "Variable",
+    values_to = "Value"
+  )
+
+# Generar histogramas para cada especie y variable
+ggplot(iris_long, aes(x = Value)) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "black") +
+  facet_grid(Species ~ Variable, scales = "free") +
+  labs(
+    title = "Histogramas por Especie y Variable",
+    x = "Valor",
+    y = "Frecuencia"
+  ) +
+  theme_bw()
