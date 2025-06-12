@@ -105,8 +105,6 @@ calcular_tendencia_central <- function(tabla, parametros) {
   clase_modal <- which.max(tabla$Frecuencia_Absoluta)
   fa_ant <- ifelse(clase_modal == 1, 0, tabla$Frecuencia_Absoluta[clase_modal - 1])
   fa_sig <- ifelse(clase_modal == parametros$k, 0, tabla$Frecuencia_Absoluta[clase_modal + 1])
-  fa_ant <- ifelse(is.na(fa_ant), 0, fa_ant)
-  fa_sig <- ifelse(is.na(fa_sig), 0, fa_sig)
   d1 <- tabla$Frecuencia_Absoluta[clase_modal] - fa_ant
   d2 <- tabla$Frecuencia_Absoluta[clase_modal] - fa_sig
   if ((d1 + d2) == 0) {
